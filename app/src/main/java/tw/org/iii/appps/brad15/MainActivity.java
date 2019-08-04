@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -21,7 +22,10 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -33,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap bmp;
     private UIHandler handler;
     private boolean isSaveStorage;
+    private File downloadDir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         }else{
             isSaveStorage = true;
+            initSDCard();
         }
 
         handler = new UIHandler();
@@ -57,8 +63,15 @@ public class MainActivity extends AppCompatActivity {
 
         mesg = findViewById(R.id.mesg);
         img = findViewById(R.id.img);
-        Log.v("brad", "debug1");
+
+
     }
+
+    private void initSDCard(){
+        downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -66,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
         if (grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             isSaveStorage = true;
+            initSDCard();
+
         }
     }
 
@@ -122,8 +137,34 @@ public class MainActivity extends AppCompatActivity {
     public void test3(View view) {
         if (!isSaveStorage) return;
 
+        new Thread(){
+            @Override
+            public void run() {
+                try{
+                    URL url = new URL("https://pdfmyurl.com/?url=https://www.gamer.com.tw");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.connect();
 
-        
+                    File downloadFile = new File(downloadDir, "gamer.pdf");
+                    FileOutputStream fout = new FileOutputStream(downloadFile);
+
+                    byte[] buf = new byte[4096*4096];
+                    BufferedInputStream bin = new BufferedInputStream(conn.getInputStream());
+                    int len = -1;
+                    while ( (len = bin.read(buf)) != -1){
+                        fout.write(buf,0, len);
+                    }
+                    fout.flush();
+                    fout.close();
+                    bin.close();
+
+                    Log.v("brad", "finish");
+                }catch (Exception e){
+
+                }
+            }
+        }.start();
+
 
 
     }
