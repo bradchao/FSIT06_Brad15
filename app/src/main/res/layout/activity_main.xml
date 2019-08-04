@@ -25,6 +25,8 @@
         android:text="test3"
         android:onClick="test3"
         />
+
+
     <ImageView
         android:id="@+id/img"
         android:layout_width="wrap_content"

@@ -4,8 +4,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -38,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private UIHandler handler;
     private boolean isSaveStorage;
     private File downloadDir;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +68,10 @@ public class MainActivity extends AppCompatActivity {
         mesg = findViewById(R.id.mesg);
         img = findViewById(R.id.img);
 
-
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMessage("Downloading...");
+        progressDialog.setTitle("Waiting...");
     }
 
     private void initSDCard(){
@@ -136,12 +143,12 @@ public class MainActivity extends AppCompatActivity {
 
     public void test3(View view) {
         if (!isSaveStorage) return;
-
+        progressDialog.show();
         new Thread(){
             @Override
             public void run() {
                 try{
-                    URL url = new URL("https://pdfmyurl.com/?url=https://www.gamer.com.tw");
+                    URL url = new URL("https://pdfmyurl.com/?url=https://www.bradchao.com");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.connect();
 
@@ -158,9 +165,9 @@ public class MainActivity extends AppCompatActivity {
                     fout.close();
                     bin.close();
 
-                    Log.v("brad", "finish");
+                    handler.sendEmptyMessage(1);
                 }catch (Exception e){
-
+                    handler.sendEmptyMessage(2);
                 }
             }
         }.start();
@@ -174,10 +181,34 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
 
-            img.setImageBitmap(bmp);
+            switch (msg.what){
+                case 0:
+                    img.setImageBitmap(bmp);
+                    break;
+                case 1:
+                    progressDialog.dismiss();
+                    showPDF();
+                    break;
+                case 2:
+                    progressDialog.dismiss();
+                    break;
+            }
 
         }
     }
+
+    private void showPDF(){
+        File file = new File( downloadDir,"gamer.pdf");
+
+        Uri pdfUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(pdfUri, "application/pdf");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(intent);
+    }
+
 
     private class MyReceiver extends BroadcastReceiver {
         @Override
